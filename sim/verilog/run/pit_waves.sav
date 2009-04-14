@@ -1,0 +1,62 @@
+[size] 1197 666
+[pos] -1 -1
+*-16.338505 72000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] tst_bench_top.
+[treeopen] tst_bench_top.pit_1.
+[treeopen] tst_bench_top.pit_2.
+[treeopen] tst_bench_top.pit_3.
+[treeopen] tst_bench_top.pit_4.
+@22
+tst_bench_top.test_num[7:0]
+@28
+tst_bench_top.pit_1.wb_clk_i
+@22
+tst_bench_top.pit_1.wb_dat_i[15:0]
+tst_bench_top.pit_1.wb_dat_o[15:0]
+@28
+tst_bench_top.sync_reset
+tst_bench_top.pit_1.arst_i
+tst_bench_top.pit_1.wb_stb_i
+@22
+tst_bench_top.mstr_psx_modx.cntrl_val[15:0]
+@200
+-Control Register
+@22
+tst_bench_top.pit_1.regs.mod_value[15:0]
+tst_bench_top.pit_1.regs.pit_pre_scl[3:0]
+tst_bench_top.pit_1.regs.write_bus[15:0]
+@28
+tst_bench_top.pit_1.regs.pit_slave
+@200
+-Modulo Counter
+@22
+tst_bench_top.pit_1.counter.mod_value[15:0]
+@28
+tst_bench_top.pit_1.counter.rollover
+@22
+tst_bench_top.pit_1.counter.cnt_n[15:0]
+@28
+tst_bench_top.pit_1.counter.counter_sync
+tst_bench_top.pit_1.counter.prescale_out
+tst_bench_top.pit_1.pit_o
+@200
+-Prescaler
+@22
+tst_bench_top.pit_1.prescale.cnt_n[14:0]
+tst_bench_top.pit_1.prescale.end_count[14:0]
+@28
+tst_bench_top.pit_1.prescale.rollover
+@200
+-Slave PIT
+@22
+tst_bench_top.pit_2.prescale.cnt_n[14:0]
+tst_bench_top.pit_2.counter.cnt_n[15:0]
+@200
+-Slave 1
+@28
+tst_bench_top.pit_3.cnt_flag_o
+tst_bench_top.pit_3.pit_o
+@200
+-Byte Mode Slave
+@22
+tst_bench_top.pit_4.counter.cnt_n[15:0]
