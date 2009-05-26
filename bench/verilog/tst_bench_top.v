@@ -55,7 +55,7 @@ module tst_bench_top();
         wire we;
         wire stb;
         wire cyc;
-        wire ack;
+        wire ack, ack_1, ack_2, ack_3, ack_4;
         wire inta_1, inta_2, inta_3, inta_4;
 	wire count_en_1;
 	wire count_flag_1;
@@ -155,6 +155,8 @@ module tst_bench_top();
 		       ({16{stb2}} & dat2_i) |
 		       ({16{stb3}} & {8'b0, dat3_i[7:0]});
 
+        assign ack = ack_1 || ack_2 || ack_3 || ack_4;
+
         // hookup wishbone_PIT_master core - Parameters take all default values
 	//  Async Reset, 16 bit Bus, 16 bit Granularity
         pit_top pit_1(
@@ -169,7 +171,7 @@ module tst_bench_top();
                 .wb_stb_i(stb0),
                 .wb_cyc_i(cyc),
 		.wb_sel_i( 2'b11 ),
-                .wb_ack_o(ack),
+                .wb_ack_o(ack_1),
                 .pit_irq_o(inta_1),
 
                 .pit_o(pit_1_out),
@@ -193,7 +195,7 @@ module tst_bench_top();
                 .wb_stb_i(stb1),
                 .wb_cyc_i(cyc),
 		.wb_sel_i( 2'b11 ),
-                .wb_ack_o(ack),
+                .wb_ack_o(ack_2),
                 .pit_irq_o(inta_2),
 
                 .pit_o(pit_2_out),
@@ -217,7 +219,7 @@ module tst_bench_top();
                 .wb_stb_i(stb2),
                 .wb_cyc_i(cyc),
 		.wb_sel_i( 2'b11 ),
-                .wb_ack_o(ack),
+                .wb_ack_o(ack_3),
                 .pit_irq_o(inta_3),
 
                 .pit_o(pit_3_out),
@@ -241,7 +243,7 @@ module tst_bench_top();
                 .wb_stb_i(stb3),
                 .wb_cyc_i(cyc),
 		.wb_sel_i( 2'b11 ),
-                .wb_ack_o(ack),
+                .wb_ack_o(ack_4),
                 .pit_irq_o(inta_4),
 
                 .pit_o(pit_4_out),
