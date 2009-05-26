@@ -76,7 +76,7 @@ module pit_wb_bus #(parameter ARST_LVL = 1'b0,    // asynchronous reset level
   assign sync_reset = wb_rst_i;
 
   // generate wishbone signals
-  wire wb_wacc = wb_cyc_i & wb_stb_i & wb_we_i;
+  wire wb_wacc = wb_cyc_i & wb_stb_i & wb_we_i & wb_ack_o;
 
   // generate acknowledge output signal
   always @(posedge wb_clk_i)
