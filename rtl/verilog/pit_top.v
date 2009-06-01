@@ -41,6 +41,7 @@ module pit_top #(parameter ARST_LVL = 1'b0,      // asynchronous reset level
                  parameter COUNT_SIZE = 16,      // Main counter size
                  parameter DECADE_CNTR = 1'b1,   // Prescale rollover decode
                  parameter NO_PRESCALE = 1'b0,   // Remove prescale function
+                 parameter SINGLE_CYCLE = 1'b0,  // No bus wait state added
 		 parameter DWIDTH = 16)          // Data bus width
   (
   // Wishbone Signals
@@ -76,6 +77,7 @@ module pit_top #(parameter ARST_LVL = 1'b0,      // asynchronous reset level
   
   // Wishbone Bus interface
   pit_wb_bus #(.ARST_LVL(ARST_LVL),
+               .SINGLE_CYCLE(SINGLE_CYCLE),
                .DWIDTH(DWIDTH))
     wishbone(
     .wb_dat_o     ( wb_dat_o ),

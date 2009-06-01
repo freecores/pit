@@ -37,11 +37,12 @@
 // 45678901234567890123456789012345678901234567890123456789012345678901234567890
 
 module pit_wb_bus #(parameter ARST_LVL = 1'b0,    // asynchronous reset level
-  		    parameter DWIDTH = 16)
+  		    parameter DWIDTH = 16,
+                    parameter SINGLE_CYCLE = 1'b0)
   (
   // Wishbone Signals
   output reg  [DWIDTH-1:0] wb_dat_o,     // databus output
-  output reg               wb_ack_o,     // bus cycle acknowledge output
+  output                   wb_ack_o,     // bus cycle acknowledge output
   input                    wb_clk_i,     // master clock input
   input                    wb_rst_i,     // synchronous active high reset
   input                    arst_i,       // asynchronous reset
@@ -61,9 +62,11 @@ module pit_wb_bus #(parameter ARST_LVL = 1'b0,    // asynchronous reset level
 
 
   // registers
+  reg    bus_wait_state;  // Holdoff wb_ack_o for one clock to add wait state
 
   // Wires
   wire   eight_bit_bus;
+  wire   wb_wacc;         // WISHBONE Write Strobe
 
   //
   // module body
@@ -76,11 +79,18 @@ module pit_wb_bus #(parameter ARST_LVL = 1'b0,    // asynchronous reset level
   assign sync_reset = wb_rst_i;
 
   // generate wishbone signals
-  wire wb_wacc = wb_cyc_i & wb_stb_i & wb_we_i & wb_ack_o;
+  assign wb_wacc = wb_cyc_i && wb_stb_i && wb_we_i && (wb_ack_o || SINGLE_CYCLE);
+  assign wb_ack_o = SINGLE_CYCLE ? wb_cyc_i && wb_stb_i : bus_wait_state;
 
-  // generate acknowledge output signal
-  always @(posedge wb_clk_i)
-    wb_ack_o <=  wb_cyc_i & wb_stb_i & ~wb_ack_o; // because timing is always honored
+  // generate acknowledge output signal, By using register all accesses takes two cycles.
+  //  Accesses in back to back clock cycles are not possable.
+  always @(posedge wb_clk_i or negedge async_rst_b)
+    if (!async_rst_b)
+      bus_wait_state <=  1'b0;
+    else if (sync_reset)
+      bus_wait_state <=  1'b0;
+    else
+      bus_wait_state <=  wb_cyc_i && wb_stb_i && !bus_wait_state;
 
   // assign data read bus -- DAT_O
   always @(posedge wb_clk_i)
