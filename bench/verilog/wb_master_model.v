@@ -146,8 +146,8 @@ task wb_read;
         input   delay;
         integer delay;
 
-        input    [awidth -1:0]  a;
-        output  [dwidth -1:0]   d;
+        input   [awidth -1:0]  a;
+        output  [dwidth -1:0]  d;
 
         begin
 
@@ -168,7 +168,8 @@ task wb_read;
                 while(~ack)     @(posedge clk);
 
                 // negate wishbone signals
-                #1;
+                d    = din; // Grab the data on the posedge of clock
+                #1;         // Delay the clearing (hold time of the control signals
                 cyc  = 1'b0;
                 stb  = 1'bx;
                 adr  = {awidth{1'bx}};
