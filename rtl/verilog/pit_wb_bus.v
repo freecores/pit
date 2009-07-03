@@ -108,16 +108,16 @@ module pit_wb_bus #(parameter ARST_LVL = 1'b0,    // asynchronous reset level
   always @*
       case ({eight_bit_bus, wb_adr_i}) // synopsys parallel_case
       // 8 bit Bus, 8 bit Granularity
-      4'b1_000: rd_data_mux <= read_regs[ 7: 0];  // 8 bit read address 0
-      4'b1_001: rd_data_mux <= read_regs[15: 8];  // 8 bit read address 1
-      4'b1_010: rd_data_mux <= read_regs[23:16];  // 8 bit read address 2
-      4'b1_011: rd_data_mux <= read_regs[31:24];  // 8 bit read address 3
-      4'b1_100: rd_data_mux <= read_regs[39:32];  // 8 bit read address 4
-      4'b1_101: rd_data_mux <= read_regs[47:40];  // 8 bit read address 5
+      4'b1_000: rd_data_mux = read_regs[ 7: 0];  // 8 bit read address 0
+      4'b1_001: rd_data_mux = read_regs[15: 8];  // 8 bit read address 1
+      4'b1_010: rd_data_mux = read_regs[23:16];  // 8 bit read address 2
+      4'b1_011: rd_data_mux = read_regs[31:24];  // 8 bit read address 3
+      4'b1_100: rd_data_mux = read_regs[39:32];  // 8 bit read address 4
+      4'b1_101: rd_data_mux = read_regs[47:40];  // 8 bit read address 5
       // 16 bit Bus, 16 bit Granularity
-      4'b0_000: rd_data_mux <= read_regs[15: 0];  // 16 bit read access address 0
-      4'b0_001: rd_data_mux <= read_regs[31:16];
-      4'b0_010: rd_data_mux <= read_regs[47:32];
+      4'b0_000: rd_data_mux = read_regs[15: 0];  // 16 bit read access address 0
+      4'b0_001: rd_data_mux = read_regs[31:16];
+      4'b0_010: rd_data_mux = read_regs[47:32];
     endcase
 
   // generate wishbone write register strobes -- one hot if 8 bit bus
