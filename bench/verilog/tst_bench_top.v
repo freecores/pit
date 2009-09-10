@@ -123,7 +123,7 @@ module tst_bench_top();
         always #20 mstr_test_clk = ~mstr_test_clk;
 
         always @(posedge mstr_test_clk)
-          vector = vector + 1;
+          vector <= vector + 1;
 
 	// hookup wishbone master model
         wb_master_model #(.dwidth(16), .awidth(32))
