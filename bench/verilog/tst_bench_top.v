@@ -41,216 +41,235 @@
 
 module tst_bench_top();
 
-        //
-        // wires && regs
-        //
-        reg        mstr_test_clk;
-        reg [19:0] vector;
-	reg [ 7:0] test_num;
-        reg        rstn;
-	reg        sync_reset;
+  parameter STOP_ON_ERROR = 1'b0;
+  parameter MAX_VECTOR = 1_000;
+  //
+  // wires && regs
+  //
+  reg        mstr_test_clk;
+  reg [19:0] vector;
+  reg [ 7:0] test_num;
+  reg        rstn;
+  reg        sync_reset;
 
-        wire [31:0] adr;
-        wire [15:0] dat_i, dat_o, dat0_i, dat1_i, dat2_i, dat3_i;
-        wire we;
-        wire stb;
-        wire cyc;
-        wire ack, ack_1, ack_2, ack_3, ack_4;
-        wire inta_1, inta_2, inta_3, inta_4;
-	wire count_en_1;
-	wire count_flag_1;
+  wire [31:0] adr;
+  wire [15:0] dat_i, dat_o, dat0_i, dat1_i, dat2_i, dat3_i;
+  wire we;
+  wire stb;
+  wire cyc;
+  wire ack, ack_1, ack_2, ack_3, ack_4;
+  wire inta_1, inta_2, inta_3, inta_4;
+  wire count_en_1;
+  wire count_flag_1;
 
-        reg [15:0] q, qq;
+  reg [15:0] q, qq;
+  reg [15:0] error_count;
 
-        wire scl, scl0_o, scl0_oen, scl1_o, scl1_oen;
-        wire sda, sda0_o, sda0_oen, sda1_o, sda1_oen;
+  wire scl, scl0_o, scl0_oen, scl1_o, scl1_oen;
+  wire sda, sda0_o, sda0_oen, sda1_o, sda1_oen;
 
-        // Name Address Locations
-        parameter PIT_CNTRL = 5'b0_0000;
-        parameter PIT_MOD   = 5'b0_0001;
-        parameter PIT_COUNT = 5'b0_0010;
+  // Name Address Locations
+  parameter PIT_CNTRL = 5'b0_0000;
+  parameter PIT_MOD   = 5'b0_0001;
+  parameter PIT_COUNT = 5'b0_0010;
 
-        parameter RD      = 1'b1;
-        parameter WR      = 1'b0;
-        parameter SADR    = 7'b0010_000;
+  parameter RD      = 1'b1;
+  parameter WR      = 1'b0;
+  parameter SADR    = 7'b0010_000;
 
-	parameter CTR_EN  = 8'b1000_0000;  // core enable bit
-	parameter CTR_IEN = 8'b0100_0000;  // core interrupt enable bit
+  parameter CTR_EN  = 8'b1000_0000;  // core enable bit
+  parameter CTR_IEN = 8'b0100_0000;  // core interrupt enable bit
 
-	parameter PIT_CNTRL_SLAVE  = 16'h8000;  // PIT Slave mode
-	parameter PIT_CNTRL_FLAG   = 16'h0004;  // PIT Rollover Flag
-	parameter PIT_CNTRL_IRQEN  = 16'h0002;  // PIT Interupt Enable
-	parameter PIT_CNTRL_ENA    = 16'h0001;  // PIT Enable
+  parameter PIT_CNTRL_SLAVE  = 16'h8000;  // PIT Slave mode
+  parameter PIT_CNTRL_FLAG   = 16'h0004;  // PIT Rollover Flag
+  parameter PIT_CNTRL_IRQEN  = 16'h0002;  // PIT Interupt Enable
+  parameter PIT_CNTRL_ENA    = 16'h0001;  // PIT Enable
 
-        parameter SLAVE_0_CNTRL = 5'b0_1000;
-        parameter SLAVE_0_MOD   = 5'b0_1001;
-        parameter SLAVE_0_COUNT = 5'b0_1010;
+  parameter SLAVE_0_CNTRL = 5'b0_1000;
+  parameter SLAVE_0_MOD   = 5'b0_1001;
+  parameter SLAVE_0_COUNT = 5'b0_1010;
 
-        parameter SLAVE_1_CNTRL = 5'b1_0000;
-        parameter SLAVE_1_MOD   = 5'b1_0001;
-        parameter SLAVE_1_COUNT = 5'b1_0010;
+  parameter SLAVE_1_CNTRL = 5'b1_0000;
+  parameter SLAVE_1_MOD   = 5'b1_0001;
+  parameter SLAVE_1_COUNT = 5'b1_0010;
 
-        parameter SLAVE_2_CNTRL_0 = 5'b1_1000;
-        parameter SLAVE_2_CNTRL_1 = 5'b1_1001;
-        parameter SLAVE_2_MOD_0   = 5'b1_1010;
-        parameter SLAVE_2_MOD_1   = 5'b1_1011;
-        parameter SLAVE_2_COUNT_0 = 5'b1_1100;
-        parameter SLAVE_2_COUNT_1 = 5'b1_1101;
+  parameter SLAVE_2_CNTRL_0 = 5'b1_1000;
+  parameter SLAVE_2_CNTRL_1 = 5'b1_1001;
+  parameter SLAVE_2_MOD_0   = 5'b1_1010;
+  parameter SLAVE_2_MOD_1   = 5'b1_1011;
+  parameter SLAVE_2_COUNT_0 = 5'b1_1100;
+  parameter SLAVE_2_COUNT_1 = 5'b1_1101;
 
-        // initial values and testbench setup
-        initial
-          begin
-            mstr_test_clk = 0;
-            vector = 0;
-	    test_num = 0;
+  // initial values and testbench setup
+  initial
+    begin
+      mstr_test_clk = 0;
+      vector = 0;
+      test_num = 0;
+      error_count = 0;
 
-            `ifdef WAVES
-                 $shm_open("waves");
-                 $shm_probe("AS",tst_bench_top,"AS");
-                 $display("\nINFO: Signal dump enabled ...\n\n");
-              `endif
+      `ifdef WAVES
+	   $shm_open("waves");
+	   $shm_probe("AS",tst_bench_top,"AS");
+	   $display("\nINFO: Signal dump enabled ...\n\n");
+	`endif
 
-              `ifdef WAVES_V
-                 $dumpfile ("pit_wave_dump.lxt");
-                 $dumpvars (0, tst_bench_top);
-                 $dumpon;
-                 $display("\nINFO: VCD Signal dump enabled ...\n\n");
-              `endif
+	`ifdef WAVES_V
+	   $dumpfile ("pit_wave_dump.lxt");
+	   $dumpvars (0, tst_bench_top);
+	   $dumpon;
+	   $display("\nINFO: VCD Signal dump enabled ...\n\n");
+	`endif
 
-          end
+    end
 
-        // generate clock
-        always #20 mstr_test_clk = ~mstr_test_clk;
+  // generate clock
+  always #20 mstr_test_clk = ~mstr_test_clk;
 
-        always @(posedge mstr_test_clk)
-          vector <= vector + 1;
+  // Keep a count of how many clocks we've simulated
+  always @(posedge mstr_test_clk)
+    begin
+      vector <= vector + 1;
+      if (vector > MAX_VECTOR)
+        begin
+          error_count <= error_count + 1;
+          $display("\n ------ !!!!! Simulation Timeout at vector=%d\n -------", vector);
+          wrap_up;
+        end
+    end
 
-	// hookup wishbone master model
-        wb_master_model #(.dwidth(16), .awidth(32))
-	        u0 (
-                .clk(mstr_test_clk),
-                .rst(rstn),
-                .adr(adr),
-                .din(dat_i),
-                .dout(dat_o),
-                .cyc(cyc),
-                .stb(stb),
-                .we(we),
-                .sel(),
-                .ack(ack),
-                .err(1'b0),
-                .rty(1'b0)
-        );
+  // Add up errors tha come from WISHBONE read compares
+  always @u0.cmp_error_detect
+    begin
+      error_count <= error_count + 1;
+    end
+
+  // hookup wishbone master model
+  wb_master_model #(.dwidth(16), .awidth(32))
+	  u0 (
+	  .clk(mstr_test_clk),
+	  .rst(rstn),
+	  .adr(adr),
+	  .din(dat_i),
+	  .dout(dat_o),
+	  .cyc(cyc),
+	  .stb(stb),
+	  .we(we),
+	  .sel(),
+	  .ack(ack),
+	  .err(1'b0),
+	  .rty(1'b0)
+  );
 
 
-        // Address decoding for different PIT module instances
-        wire stb0 = stb && ~adr[4] && ~adr[3];
-        wire stb1 = stb && ~adr[4] &&  adr[3];
-        wire stb2 = stb &&  adr[4] && ~adr[3];
-        wire stb3 = stb &&  adr[4] &&  adr[3];
+  // Address decoding for different PIT module instances
+  wire stb0 = stb && ~adr[4] && ~adr[3];
+  wire stb1 = stb && ~adr[4] &&  adr[3];
+  wire stb2 = stb &&  adr[4] && ~adr[3];
+  wire stb3 = stb &&  adr[4] &&  adr[3];
 
-        // Create the Read Data Bus
-        assign dat_i = ({16{stb0}} & dat0_i) |
-	               ({16{stb1}} & dat1_i) |
-		       ({16{stb2}} & dat2_i) |
-		       ({16{stb3}} & {8'b0, dat3_i[7:0]});
+  // Create the Read Data Bus
+  assign dat_i = ({16{stb0}} & dat0_i) |
+		 ({16{stb1}} & dat1_i) |
+		 ({16{stb2}} & dat2_i) |
+		 ({16{stb3}} & {8'b0, dat3_i[7:0]});
 
-        assign ack = ack_1 || ack_2 || ack_3 || ack_4;
+  assign ack = ack_1 || ack_2 || ack_3 || ack_4;
 
-        // hookup wishbone_PIT_master core - Parameters take all default values
-	//  Async Reset, 16 bit Bus, 16 bit Granularity
-        pit_top pit_1(
-                // wishbone interface
-                .wb_clk_i(mstr_test_clk),
-                .wb_rst_i(1'b0),
-                .arst_i(rstn),
-                .wb_adr_i(adr[2:0]),
-                .wb_dat_i(dat_o),
-                .wb_dat_o(dat0_i),
-                .wb_we_i(we),
-                .wb_stb_i(stb0),
-                .wb_cyc_i(cyc),
-		.wb_sel_i( 2'b11 ),
-                .wb_ack_o(ack_1),
-                .pit_irq_o(inta_1),
+  // hookup wishbone_PIT_master core - Parameters take all default values
+  //  Async Reset, 16 bit Bus, 16 bit Granularity
+  pit_top pit_1(
+	  // wishbone interface
+	  .wb_clk_i(mstr_test_clk),
+	  .wb_rst_i(1'b0),
+	  .arst_i(rstn),
+	  .wb_adr_i(adr[2:0]),
+	  .wb_dat_i(dat_o),
+	  .wb_dat_o(dat0_i),
+	  .wb_we_i(we),
+	  .wb_stb_i(stb0),
+	  .wb_cyc_i(cyc),
+	  .wb_sel_i( 2'b11 ),
+	  .wb_ack_o(ack_1),
+	  .pit_irq_o(inta_1),
 
-                .pit_o(pit_1_out),
-                .ext_sync_i(1'b0),
-		.cnt_sync_o(count_en_1),
-                .cnt_flag_o(count_flag_1)
-        );
+	  .pit_o(pit_1_out),
+	  .ext_sync_i(1'b0),
+	  .cnt_sync_o(count_en_1),
+	  .cnt_flag_o(count_flag_1)
+  );
 
-        // hookup wishbone_PIT_slave core - Parameters take all default values
-	//  Sync Reset, 16 bit Bus, 16 bit Granularity
-        pit_top #(.ARST_LVL(1'b1))
-		pit_2(
-                // wishbone interface
-                .wb_clk_i(mstr_test_clk),
-                .wb_rst_i(sync_reset),
-                .arst_i(1'b0),
-                .wb_adr_i(adr[2:0]),
-                .wb_dat_i(dat_o),
-                .wb_dat_o(dat1_i),
-                .wb_we_i(we),
-                .wb_stb_i(stb1),
-                .wb_cyc_i(cyc),
-		.wb_sel_i( 2'b11 ),
-                .wb_ack_o(ack_2),
-                .pit_irq_o(inta_2),
+  // hookup wishbone_PIT_slave core - Parameters take all default values
+  //  Sync Reset, 16 bit Bus, 16 bit Granularity
+  pit_top #(.ARST_LVL(1'b1))
+	  pit_2(
+	  // wishbone interface
+	  .wb_clk_i(mstr_test_clk),
+	  .wb_rst_i(sync_reset),
+	  .arst_i(1'b0),
+	  .wb_adr_i(adr[2:0]),
+	  .wb_dat_i(dat_o),
+	  .wb_dat_o(dat1_i),
+	  .wb_we_i(we),
+	  .wb_stb_i(stb1),
+	  .wb_cyc_i(cyc),
+	  .wb_sel_i( 2'b11 ),
+	  .wb_ack_o(ack_2),
+	  .pit_irq_o(inta_2),
 
-                .pit_o(pit_2_out),
-                .ext_sync_i(count_en_1),
-		.cnt_sync_o(count_en_2),
-                .cnt_flag_o(count_flag_2)
-        );
+	  .pit_o(pit_2_out),
+	  .ext_sync_i(count_en_1),
+	  .cnt_sync_o(count_en_2),
+	  .cnt_flag_o(count_flag_2)
+  );
 
-        // hookup wishbone_PIT_slave core
-	//  16 bit Bus, 16 bit Granularity
-        pit_top #(.NO_PRESCALE(1'b1))
-		pit_3(
-                // wishbone interface
-                .wb_clk_i(mstr_test_clk),
-                .wb_rst_i(sync_reset),
-                .arst_i(1'b1),
-                .wb_adr_i(adr[2:0]),
-                .wb_dat_i(dat_o),
-                .wb_dat_o(dat2_i),
-                .wb_we_i(we),
-                .wb_stb_i(stb2),
-                .wb_cyc_i(cyc),
-		.wb_sel_i( 2'b11 ),
-                .wb_ack_o(ack_3),
-                .pit_irq_o(inta_3),
+  // hookup wishbone_PIT_slave core
+  //  16 bit Bus, 16 bit Granularity
+  pit_top #(.NO_PRESCALE(1'b1))
+	  pit_3(
+	  // wishbone interface
+	  .wb_clk_i(mstr_test_clk),
+	  .wb_rst_i(sync_reset),
+	  .arst_i(1'b1),
+	  .wb_adr_i(adr[2:0]),
+	  .wb_dat_i(dat_o),
+	  .wb_dat_o(dat2_i),
+	  .wb_we_i(we),
+	  .wb_stb_i(stb2),
+	  .wb_cyc_i(cyc),
+	  .wb_sel_i( 2'b11 ),
+	  .wb_ack_o(ack_3),
+	  .pit_irq_o(inta_3),
 
-                .pit_o(pit_3_out),
-                .ext_sync_i(count_en_1),
-		.cnt_sync_o(count_en_3),
-                .cnt_flag_o(count_flag_3)
-        );
+	  .pit_o(pit_3_out),
+	  .ext_sync_i(count_en_1),
+	  .cnt_sync_o(count_en_3),
+	  .cnt_flag_o(count_flag_3)
+  );
 
-        // hookup wishbone_PIT_slave core
-	//  8 bit Bus, 8 bit Granularity
-        pit_top #(.DWIDTH(8))
-		pit_4(
-                // wishbone interface
-                .wb_clk_i(mstr_test_clk),
-                .wb_rst_i(sync_reset),
-                .arst_i(1'b1),
-                .wb_adr_i(adr[2:0]),
-                .wb_dat_i(dat_o[7:0]),
-                .wb_dat_o(dat3_i[7:0]),
-                .wb_we_i(we),
-                .wb_stb_i(stb3),
-                .wb_cyc_i(cyc),
-		.wb_sel_i( 2'b11 ),
-                .wb_ack_o(ack_4),
-                .pit_irq_o(inta_4),
+  // hookup wishbone_PIT_slave core
+  //  8 bit Bus, 8 bit Granularity
+  pit_top #(.DWIDTH(8))
+	  pit_4(
+	  // wishbone interface
+	  .wb_clk_i(mstr_test_clk),
+	  .wb_rst_i(sync_reset),
+	  .arst_i(1'b1),
+	  .wb_adr_i(adr[2:0]),
+	  .wb_dat_i(dat_o[7:0]),
+	  .wb_dat_o(dat3_i[7:0]),
+	  .wb_we_i(we),
+	  .wb_stb_i(stb3),
+	  .wb_cyc_i(cyc),
+	  .wb_sel_i( 2'b11 ),
+	  .wb_ack_o(ack_4),
+	  .pit_irq_o(inta_4),
 
-                .pit_o(pit_4_out),
-                .ext_sync_i(count_en_1),
-		.cnt_sync_o(count_en_4),
-                .cnt_flag_o(count_flag_4)
-        );
+	  .pit_o(pit_4_out),
+	  .ext_sync_i(count_en_1),
+	  .cnt_sync_o(count_en_4),
+	  .cnt_flag_o(count_flag_4)
+  );
 
 // Test Program
 initial
@@ -312,9 +331,10 @@ initial
       mstr_psx_modx(4,0);
 
       repeat(100) @(posedge mstr_test_clk);
-      $display("\nTestbench done at vector=%d\n", vector);
-      $finish;
-  end
+      
+      wrap_up;
+      
+  end  // Main Test Flow
 
 // Poll for flag set
 task wait_flag_set;
@@ -409,6 +429,20 @@ task mstr_psx_modx;
       u0.wb_write(1, PIT_CNTRL, 16'b0); //
 
    end
+endtask
+
+task wrap_up;
+  begin
+    test_num = test_num + 1;
+    repeat(10) @(posedge mstr_test_clk);
+    $display("\nSimulation Finished!! - vector =%d", vector);
+    if (error_count == 0)
+      $display("Simulation Passed");
+    else
+      $display("Simulation Failed  --- Errors =%d", error_count);
+
+    $finish;
+  end
 endtask
 
 

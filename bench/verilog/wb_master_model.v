@@ -51,30 +51,30 @@
 
 module wb_master_model  #(parameter dwidth = 32,
                           parameter awidth = 32)
-(clk, rst, adr, din, dout, cyc, stb, we, sel, ack, err, rty);
-
-
-input                  clk, rst;
-output [awidth   -1:0]  adr;
-input  [dwidth   -1:0]  din;
-output [dwidth   -1:0]  dout;
-output                 cyc, stb;
-output                          we;
-output [dwidth/8 -1:0] sel;
-input                           ack, err, rty;
+(
+output reg                 cyc,
+output reg                 stb,
+output reg                 we,
+output reg [dwidth/8 -1:0] sel,
+output reg [awidth   -1:0] adr,
+output reg [dwidth   -1:0] dout,
+input      [dwidth   -1:0] din,
+input                      clk,
+input                      ack,
+input                      rst,  // No Connect
+input                      err,  // No Connect
+input                      rty   // No Connect
+);
 
 ////////////////////////////////////////////////////////////////////
 //
 // Local Wires
 //
 
-reg     [awidth   -1:0] adr;
-reg     [dwidth   -1:0] dout;
-reg                            cyc, stb;
-reg                            we;
-reg [dwidth/8 -1:0] sel;
 
 reg [dwidth   -1:0] q;
+
+event cmp_error_detect;
 
 ////////////////////////////////////////////////////////////////////
 //
@@ -83,16 +83,16 @@ reg [dwidth   -1:0] q;
 
 initial
         begin
-                //adr = 32'hxxxx_xxxx;
-                //adr = 0;
-                adr  = {awidth{1'bx}};
-                dout = {dwidth{1'bx}};
-                cyc  = 1'b0;
-                stb  = 1'bx;
-                we   = 1'hx;
-                sel  = {dwidth/8{1'bx}};
-                #1;
-                $display("\nINFO: WISHBONE MASTER MODEL INSTANTIATED (%m)");
+	  //adr = 32'hxxxx_xxxx;
+	  //adr = 0;
+	  adr  = {awidth{1'bx}};
+	  dout = {dwidth{1'bx}};
+	  cyc  = 1'b0;
+	  stb  = 1'bx;
+	  we   = 1'hx;
+	  sel  = {dwidth/8{1'bx}};
+	  #1;
+	  $display("\nINFO: WISHBONE MASTER MODEL INSTANTIATED (%m)");
         end
 
 ////////////////////////////////////////////////////////////////////
@@ -109,30 +109,30 @@ task wb_write;
 
         begin
 
-                // wait initial delay
-                repeat(delay) @(posedge clk);
+	  // wait initial delay
+	  repeat(delay) @(posedge clk);
 
-                // assert wishbone signal
-                #1;
-                adr  = a;
-                dout = d;
-                cyc  = 1'b1;
-                stb  = 1'b1;
-                we   = 1'b1;
-                sel  = {dwidth/8{1'b1}};
-                @(posedge clk);
+	  // assert wishbone signal
+	  #1;
+	  adr  = a;
+	  dout = d;
+	  cyc  = 1'b1;
+	  stb  = 1'b1;
+	  we   = 1'b1;
+	  sel  = {dwidth/8{1'b1}};
+	  @(posedge clk);
 
-                // wait for acknowledge from slave
-                while(~ack)     @(posedge clk);
+	  // wait for acknowledge from slave
+	  while(~ack)     @(posedge clk);
 
-                // negate wishbone signals
-                #1;
-                cyc  = 1'b0;
-                stb  = 1'bx;
-                adr  = {awidth{1'bx}};
-                dout = {dwidth{1'bx}};
-                we   = 1'hx;
-                sel  = {dwidth/8{1'bx}};
+	  // negate wishbone signals
+	  #1;
+	  cyc  = 1'b0;
+	  stb  = 1'bx;
+	  adr  = {awidth{1'bx}};
+	  dout = {dwidth{1'bx}};
+	  we   = 1'hx;
+	  sel  = {dwidth/8{1'bx}};
 
         end
 endtask
@@ -151,32 +151,32 @@ task wb_read;
 
         begin
 
-                // wait initial delay
-                repeat(delay) @(posedge clk);
+	  // wait initial delay
+	  repeat(delay) @(posedge clk);
 
-                // assert wishbone signals
-                #1;
-                adr  = a;
-                dout = {dwidth{1'bx}};
-                cyc  = 1'b1;
-                stb  = 1'b1;
-                we   = 1'b0;
-                sel  = {dwidth/8{1'b1}};
-                @(posedge clk);
+	  // assert wishbone signals
+	  #1;
+	  adr  = a;
+	  dout = {dwidth{1'bx}};
+	  cyc  = 1'b1;
+	  stb  = 1'b1;
+	  we   = 1'b0;
+	  sel  = {dwidth/8{1'b1}};
+	  @(posedge clk);
 
-                // wait for acknowledge from slave
-                while(~ack)     @(posedge clk);
+	  // wait for acknowledge from slave
+	  while(~ack)     @(posedge clk);
 
-                // negate wishbone signals
-                d    = din; // Grab the data on the posedge of clock
-                #1;         // Delay the clearing (hold time of the control signals
-                cyc  = 1'b0;
-                stb  = 1'bx;
-                adr  = {awidth{1'bx}};
-                dout = {dwidth{1'bx}};
-                we   = 1'hx;
-                sel  = {dwidth/8{1'bx}};
-                d    = din;
+	  // negate wishbone signals
+	  d    = din; // Grab the data on the posedge of clock
+	  #1;         // Delay the clearing (hold time of the control signals
+	  cyc  = 1'b0;
+	  stb  = 1'bx;
+	  adr  = {awidth{1'bx}};
+	  dout = {dwidth{1'bx}};
+	  we   = 1'hx;
+	  sel  = {dwidth/8{1'bx}};
+	  d    = din;
 
         end
 endtask
@@ -194,10 +194,13 @@ task wb_cmp;
         input [dwidth -1:0]     d_exp;
 
         begin
-                wb_read (delay, a, q);
+	  wb_read (delay, a, q);
 
-                if (d_exp !== q)
-                        $display("Data compare error at address %h. Received %h, expected %h at time %t", a, q, d_exp, $time);
+	  if (d_exp !== q)
+	    begin
+	      -> cmp_error_detect;
+	      $display("Data compare error at address %h. Received %h, expected %h at time %t", a, q, d_exp, $time);
+	    end
         end
 endtask
 
