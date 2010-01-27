@@ -86,7 +86,7 @@ module pit_wb_bus #(parameter ARST_LVL = 1'b0,    // asynchronous reset level
   assign module_sel = wb_cyc_i && wb_stb_i;
   assign wb_wacc    = module_sel && wb_we_i && (wb_ack_o || SINGLE_CYCLE);
   assign wb_racc    = module_sel && !wb_we_i;
-  assign wb_ack_o   = SINGLE_CYCLE ? module_sel : bus_wait_state;
+  assign wb_ack_o   = SINGLE_CYCLE ? module_sel : (bus_wait_state && module_sel);
   assign wb_dat_o   = SINGLE_CYCLE ? rd_data_mux : rd_data_reg;
 
   // generate acknowledge output signal, By using register all accesses takes two cycles.
