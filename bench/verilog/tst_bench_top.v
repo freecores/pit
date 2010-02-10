@@ -177,8 +177,9 @@ module tst_bench_top();
   assign ack = ack_1 || ack_2 || ack_3 || ack_4;
 
   // hookup wishbone_PIT_master core - Parameters take all default values
-  //  Async Reset, 16 bit Bus, 16 bit Granularity
-  pit_top pit_1(
+  //  Async Reset, 16 bit Bus, 16 bit Granularity,Wait States
+  pit_top #(.SINGLE_CYCLE(1'b0))
+          pit_1(
 	  // wishbone interface
 	  .wb_clk_i(mstr_test_clk),
 	  .wb_rst_i(1'b0),
