@@ -8,7 +8,7 @@
 //  Downloaded from: http://www.opencores.org/projects/pit.....
 //
 ////////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2009, Robert Hayes
+// Copyright (c) 2011, Robert Hayes
 //
 // All rights reserved.
 //
@@ -41,36 +41,36 @@ module pit_wb_bus #(parameter ARST_LVL = 1'b0,    // asynchronous reset level
                     parameter SINGLE_CYCLE = 1'b0)
   (
   // Wishbone Signals
-  output reg  [DWIDTH-1:0] wb_dat_o,     // databus output - Pseudo Register
-  output                   wb_ack_o,     // bus cycle acknowledge output
-  input                    wb_clk_i,     // master clock input
-  input                    wb_rst_i,     // synchronous active high reset
-  input                    arst_i,       // asynchronous reset
-  input             [ 2:0] wb_adr_i,     // lower address bits
-  input       [DWIDTH-1:0] wb_dat_i,     // databus input
-  input                    wb_we_i,      // write enable input
-  input                    wb_stb_i,     // stobe/core select signal
-  input                    wb_cyc_i,     // valid bus cycle input
-  input              [1:0] wb_sel_i,     // Select byte in word bus transaction
+  output logic [DWIDTH-1:0] wb_dat_o,     // databus output - Pseudo Register
+  output                    wb_ack_o,     // bus cycle acknowledge output
+  input                     wb_clk_i,     // master clock input
+  input                     wb_rst_i,     // synchronous active high reset
+  input                     arst_i,       // asynchronous reset
+  input              [ 2:0] wb_adr_i,     // lower address bits
+  input        [DWIDTH-1:0] wb_dat_i,     // databus input
+  input                     wb_we_i,      // write enable input
+  input                     wb_stb_i,     // stobe/core select signal
+  input                     wb_cyc_i,     // valid bus cycle input
+  input               [1:0] wb_sel_i,     // Select byte in word bus transaction
   // PIT Control Signals
-  output reg        [ 3:0] write_regs,   // Decode write control register
-  output                   async_rst_b,  //
-  output                   sync_reset,   //
-  input                    irq_source,   //
-  input             [47:0] read_regs     // status register bits
+  output logic       [ 3:0] write_regs,   // Decode write control register
+  output                    async_rst_b,  //
+  output                    sync_reset,   //
+  input                     irq_source,   //
+  input              [47:0] read_regs     // status register bits
   );
 
 
   // registers
-  reg        bus_wait_state;  // Holdoff wb_ack_o for one clock to add wait state
-  reg  [2:0] addr_latch;      // Capture WISHBONE Address 
+  logic       bus_wait_state;  // Holdoff wb_ack_o for one clock to add wait state
+  logic [2:0] addr_latch;      // Capture WISHBONE Address 
 
   // Wires
-  wire       eight_bit_bus;
-  wire       module_sel;      // This module is selected for bus transaction
-  wire       wb_wacc;         // WISHBONE Write Strobe
-  wire       wb_racc;         // WISHBONE Read Access (Clock gating signal)
-  wire [2:0] address;         // Select either direct or latched address
+  logic       eight_bit_bus;
+  logic       module_sel;      // This module is selected for bus transaction
+  logic       wb_wacc;         // WISHBONE Write Strobe
+  logic       wb_racc;         // WISHBONE Read Access (Clock gating signal)
+  logic [2:0] address;         // Select either direct or latched address
 
   //
   // module body
