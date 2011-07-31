@@ -75,7 +75,7 @@ module pit_regs #(parameter ARST_LVL = 1'b0,  // asynchronous reset level
   assign pit_pre_scl = NO_PRESCALE ? 4'b0 : pit_pre;
 
   // generate wishbone write registers
-  always @(posedge bus_clk or negedge async_rst_b)
+  always_ff @(posedge bus_clk or negedge async_rst_b)
     if (!async_rst_b)
       begin
         pit_slave   <= 1'b0;
@@ -123,7 +123,7 @@ module pit_regs #(parameter ARST_LVL = 1'b0,  // asynchronous reset level
       endcase
 
   // generate interrupt request signals
-  always @(posedge bus_clk or negedge async_rst_b)
+  always_ff @(posedge bus_clk or negedge async_rst_b)
     if (!async_rst_b)
       pit_irq_o <= 0;
     else if (sync_reset)

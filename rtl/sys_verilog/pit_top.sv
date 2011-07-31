@@ -74,45 +74,46 @@ module pit_top #(parameter ARST_LVL = 1'b0,      // asynchronous reset level
   logic                  pit_slave;     // PIT in Slave Mode, ext_sync_i selected
   logic           [ 3:0] pit_pre_scl;   // Prescaler modulo
   logic                  counter_sync;  // 
+  logic                  pit_flag;      //
   
   // Wishbone Bus interface
   pit_wb_bus #(.ARST_LVL(ARST_LVL),
                .SINGLE_CYCLE(SINGLE_CYCLE),
                .DWIDTH(DWIDTH))
-    wishbone(*,
-    .irq_source   ( cnt_flag_o ),
-    .read_regs    (               // in  -- status register bits
-		   { cnt_n,
-		     mod_value,
-		     {pit_slave, DECADE_CNTR, NO_PRESCALE, 1'b0, pit_pre_scl,
-		      5'b0, cnt_flag_o, pit_ien, cnt_sync_o}
-		   }
-		  )
-  );
+    wishbone(
+      .irq_source   ( cnt_flag_o ),
+      .read_regs    (               // in  -- status register bits
+		     { cnt_n,
+		       mod_value,
+		       {pit_slave, DECADE_CNTR, NO_PRESCALE, 1'b0, pit_pre_scl,
+		        5'b0, cnt_flag_o, pit_ien, cnt_sync_o}
+		     }
+		    ),
+    .*);
 
 // -----------------------------------------------------------------------------
   pit_regs #(.ARST_LVL(ARST_LVL),
              .COUNT_SIZE(COUNT_SIZE),
 	     .NO_PRESCALE(NO_PRESCALE),
              .DWIDTH(DWIDTH))
-    regs(*,
-    .bus_clk      ( wb_clk_i ),
-    .write_bus    ( wb_dat_i )
-  );
+    regs(
+      .bus_clk      ( wb_clk_i ),
+      .write_bus    ( wb_dat_i ),
+      .*);
 
 // -----------------------------------------------------------------------------
   pit_prescale #(.COUNT_SIZE(PRE_COUNT_SIZE),
                  .DECADE_CNTR(DECADE_CNTR),
 		 .NO_PRESCALE(NO_PRESCALE))
-    prescale(*,
+    prescale(
     .bus_clk      ( wb_clk_i ),
-    .divisor      ( pit_pre_scl )
-  );
+    .divisor      ( pit_pre_scl ),
+    .*);
 
 // -----------------------------------------------------------------------------
   pit_count #(.COUNT_SIZE(COUNT_SIZE))
-    counter(*,
-    .bus_clk      ( wb_clk_i )
-  );
+    counter(
+    .bus_clk      ( wb_clk_i ),
+    .*);
 
 endmodule // pit_top

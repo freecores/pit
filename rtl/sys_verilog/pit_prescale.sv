@@ -65,7 +65,7 @@ logic                   rollover;      //
 // This was going to be a "generate" block but iverilog does't support that
 //  command so we'll just have to trust the compiler to simplify the logic based
 //  on the setting of the constant "DECADE_CNTR"
-   always @*
+   always_comb
      if ( DECADE_CNTR )
        case (divisor)
           0: end_count = 1;
@@ -80,7 +80,7 @@ logic                   rollover;      //
           default: end_count = 20_000;
         endcase
     else
-        case (divisor)
+        unique case (divisor)
            0: end_count = 1;
            1: end_count = 2;
            2: end_count = 4;
@@ -111,7 +111,7 @@ assign prescale_out = (pit_slave && div_1 && ext_sync_i) || rollover;
 // If the "NO_PRESCALE" parameter is set the compiler should hopefully strip
 //  these counter bits when the module is compiled because the only place the
 //  register outputs go to drive a signal "rollover" that is already a constant.
-always @(posedge bus_clk or negedge async_rst_b)
+always_ff @(posedge bus_clk or negedge async_rst_b)
   if ( !async_rst_b )
     cnt_n  <= 1;
   else if ( !counter_sync || rollover)

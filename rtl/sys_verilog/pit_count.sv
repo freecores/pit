@@ -67,7 +67,7 @@ assign rollover = ((cnt_n == mod_value) || no_div) && prescale_out;
 assign clear_counter = !counter_sync;
 
 //  Div N Counter
-always @(posedge bus_clk or negedge async_rst_b)
+always_ff @(posedge bus_clk or negedge async_rst_b)
   if ( !async_rst_b )
     cnt_n  <= 1;
   else if ( clear_counter || rollover || no_div)
@@ -76,7 +76,7 @@ always @(posedge bus_clk or negedge async_rst_b)
     cnt_n  <= cnt_n + 1;
 
 //  Counter Rollover Flag and Interrupt
-always @(posedge bus_clk or negedge async_rst_b)
+always_ff @(posedge bus_clk or negedge async_rst_b)
   if ( !async_rst_b )
     cnt_flag_o <= 0;
   else if ( clear_counter || pit_flg_clr)
@@ -85,7 +85,7 @@ always @(posedge bus_clk or negedge async_rst_b)
     cnt_flag_o <= 1;
 
 //  PIT Output Register
-always @(posedge bus_clk or negedge async_rst_b)
+always_ff @(posedge bus_clk or negedge async_rst_b)
   if ( !async_rst_b )
     pit_o <= 0;
   else

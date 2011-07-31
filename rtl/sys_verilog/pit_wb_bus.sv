@@ -91,7 +91,7 @@ module pit_wb_bus #(parameter ARST_LVL = 1'b0,    // asynchronous reset level
 
   // generate acknowledge output signal, By using register all accesses takes two cycles.
   //  Accesses in back to back clock cycles are not possable.
-  always @(posedge wb_clk_i or negedge async_rst_b)
+  always_ff @(posedge wb_clk_i or negedge async_rst_b)
     if (!async_rst_b)
       bus_wait_state <=  1'b0;
     else if (sync_reset)
@@ -101,12 +101,12 @@ module pit_wb_bus #(parameter ARST_LVL = 1'b0,    // asynchronous reset level
 
   // Capture address in first cycle of WISHBONE Bus tranaction
   //  Only used when Wait states are enabled
-  always @(posedge wb_clk_i)
+  always_ff @(posedge wb_clk_i)
     if ( module_sel )                  // Clock gate for power saving
       addr_latch <= wb_adr_i;
 
   // WISHBONE Read Data Mux
-  always @*
+  always_comb
       case ({eight_bit_bus, address}) // synopsys parallel_case
       // 8 bit Bus, 8 bit Granularity
       4'b1_000: wb_dat_o = read_regs[ 7: 0];  // 8 bit read address 0
@@ -123,7 +123,7 @@ module pit_wb_bus #(parameter ARST_LVL = 1'b0,    // asynchronous reset level
     endcase
 
   // generate wishbone write register strobes -- one hot if 8 bit bus
-  always @*
+  always_comb
     begin
       write_regs = 0;
       if (wb_wacc)
