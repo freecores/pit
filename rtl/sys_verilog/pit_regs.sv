@@ -36,8 +36,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 // 45678901234567890123456789012345678901234567890123456789012345678901234567890
 
-module pit_regs #(parameter ARST_LVL = 1'b0,  // asynchronous reset level
-                  parameter COUNT_SIZE = 16,
+module pit_regs #(parameter COUNT_SIZE = 16,
                   parameter NO_PRESCALE = 1'b0,
                   parameter DWIDTH = 16)
   (
@@ -96,7 +95,7 @@ module pit_regs #(parameter ARST_LVL = 1'b0,  // asynchronous reset level
       end
     else
       case (write_regs) // synopsys parallel_case
-         4'b0011 :
+         4'b0011 :  // 16-bit write
            begin
              pit_slave   <= write_data[15];
              pit_pre     <= write_data[11:8];
@@ -104,13 +103,13 @@ module pit_regs #(parameter ARST_LVL = 1'b0,  // asynchronous reset level
              pit_ien     <= write_data[1];
              cnt_sync_o  <= write_data[0];
            end
-         4'b0001 :
+         4'b0001 :  // 8-bit low byte write
            begin
              pit_flg_clr <= write_data[2];
              pit_ien     <= write_data[1];
              cnt_sync_o  <= write_data[0];
            end
-         4'b0010 :
+         4'b0010 :  // 8-bit high byte write
            begin
              pit_slave   <= write_data[7];
              pit_pre     <= write_data[3:0];

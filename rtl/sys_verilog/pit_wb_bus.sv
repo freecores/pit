@@ -36,33 +36,67 @@
 ////////////////////////////////////////////////////////////////////////////////
 // 45678901234567890123456789012345678901234567890123456789012345678901234567890
 
-module pit_wb_bus #(parameter ARST_LVL = 1'b0,    // asynchronous reset level
-  		    parameter DWIDTH = 16,
-                    parameter SINGLE_CYCLE = 1'b0)
+interface wishbone_if #(parameter D_WIDTH = 16,
+                        parameter A_WIDTH = 3)
+
+  // These signals maintain their direction without regard to master or slave
+  //  Some signals may not be connected in every instance of the interface usage
+  (logic [D_WIDTH-1:0] wb_dat_i,  // databus input
+   logic               wb_clk,    // master clock input
+
+   // These signals will change direction based on interface usage
+   logic               arst,        // asynchronous reset
+   logic               wb_rst,      // synchronous active high reset
+   logic [A_WIDTH-1:0] wb_adr,      // lower address bits
+   logic               wb_we,       // write enable input
+   logic               wb_cyc,      // valid bus cycle input
+   logic [2:0]         wb_sel       // Select bytes in word bus transaction
+  );
+  
+  // Define the signal directions when the interface is used as a slave
+  modport slave (input   wb_clk,
+                         arst,
+                         wb_rst,
+                         wb_adr,
+                         wb_dat_i,
+                         wb_we,
+                         wb_cyc,
+                         wb_sel);
+
+  // define the signal directions when the interface is used as a master
+  modport master (output wb_adr,
+                         wb_we,
+                         wb_cyc,
+                         wb_sel,
+                  input  wb_clk,
+                         wb_dat_i,
+                         arst,
+                         wb_rst);
+
+endinterface  // wishbone_if  
+  
+module pit_wb_bus #(parameter D_WIDTH = 16,
+                    parameter S_WIDTH = 2,
+                    parameter A_WIDTH = 3,
+                    parameter ARST_LVL = 1'b0,      // asynchronous reset level
+                    parameter SINGLE_CYCLE = 1'b0)  // Add a wait state to bus transcation
   (
   // Wishbone Signals
-  output logic [DWIDTH-1:0] wb_dat_o,     // databus output - Pseudo Register
-  output                    wb_ack_o,     // bus cycle acknowledge output
-  input                     wb_clk_i,     // master clock input
-  input                     wb_rst_i,     // synchronous active high reset
-  input                     arst_i,       // asynchronous reset
-  input              [ 2:0] wb_adr_i,     // lower address bits
-  input        [DWIDTH-1:0] wb_dat_i,     // databus input
-  input                     wb_we_i,      // write enable input
-  input                     wb_stb_i,     // stobe/core select signal
-  input                     wb_cyc_i,     // valid bus cycle input
-  input               [1:0] wb_sel_i,     // Select byte in word bus transaction
+  wishbone_if.slave          wb,          // Define the interface instance name
+  output logic [D_WIDTH-1:0] wb_dat_o,    // databus output - Pseudo Register
+  output logic               wb_ack,      // bus cycle acknowledge output
+  input  logic               wb_stb,      // stobe/core select signal
   // PIT Control Signals
-  output logic       [ 3:0] write_regs,   // Decode write control register
-  output                    async_rst_b,  //
-  output                    sync_reset,   //
-  input                     irq_source,   //
-  input              [47:0] read_regs     // status register bits
+  output logic       [ 3:0] write_regs,  // Decode write control register
+  output                    async_rst_b, //
+  output                    sync_reset,  //
+  input                     irq_source,  //
+  input              [47:0] read_regs    // status register bits
   );
 
 
   // registers
-  logic       bus_wait_state;  // Holdoff wb_ack_o for one clock to add wait state
+  logic       bus_wait_state;  // Holdoff wb_ack for one clock to add wait state
   logic [2:0] addr_latch;      // Capture WISHBONE Address 
 
   // Wires
@@ -77,21 +111,21 @@ module pit_wb_bus #(parameter ARST_LVL = 1'b0,    // asynchronous reset level
   //
 
   // generate internal resets
-  assign eight_bit_bus = (DWIDTH == 8);
+  assign eight_bit_bus = (D_WIDTH == 8);
 
-  assign async_rst_b = arst_i ^ ARST_LVL;
-  assign sync_reset = wb_rst_i;
+  assign async_rst_b = wb.arst ^ ARST_LVL;
+  assign sync_reset  = wb.wb_rst;
 
   // generate wishbone signals
-  assign module_sel = wb_cyc_i && wb_stb_i;
-  assign wb_wacc    = module_sel && wb_we_i && (wb_ack_o || SINGLE_CYCLE);
-  assign wb_racc    = module_sel && !wb_we_i;
-  assign wb_ack_o   = SINGLE_CYCLE ? module_sel : (bus_wait_state && module_sel);
-  assign address    = SINGLE_CYCLE ? wb_adr_i : addr_latch;
+  assign module_sel = wb.wb_cyc && wb_stb;
+  assign wb_wacc    = module_sel && wb.wb_we && (wb_ack || SINGLE_CYCLE);
+  assign wb_racc    = module_sel && !wb.wb_we;
+  assign wb_ack     = SINGLE_CYCLE ? module_sel : (bus_wait_state && module_sel);
+  assign address    = SINGLE_CYCLE ? wb.wb_adr : addr_latch;
 
   // generate acknowledge output signal, By using register all accesses takes two cycles.
   //  Accesses in back to back clock cycles are not possable.
-  always_ff @(posedge wb_clk_i or negedge async_rst_b)
+  always_ff @(posedge wb.wb_clk or negedge async_rst_b)
     if (!async_rst_b)
       bus_wait_state <=  1'b0;
     else if (sync_reset)
@@ -101,9 +135,10 @@ module pit_wb_bus #(parameter ARST_LVL = 1'b0,    // asynchronous reset level
 
   // Capture address in first cycle of WISHBONE Bus tranaction
   //  Only used when Wait states are enabled
-  always_ff @(posedge wb_clk_i)
+  //  Synthesis tool should be enabled to remove these registers in SINGLE_CYCLE mode
+  always_ff @(posedge wb.wb_clk)
     if ( module_sel )                  // Clock gate for power saving
-      addr_latch <= wb_adr_i;
+      addr_latch <= wb.wb_adr;
 
   // WISHBONE Read Data Mux
   always_comb
@@ -119,7 +154,7 @@ module pit_wb_bus #(parameter ARST_LVL = 1'b0,    // asynchronous reset level
       4'b0_000: wb_dat_o = read_regs[15: 0];  // 16 bit read access address 0
       4'b0_001: wb_dat_o = read_regs[31:16];
       4'b0_010: wb_dat_o = read_regs[47:32];
-      default:  wb_dat_o = 0;
+      default:  wb_dat_o = '0;
     endcase
 
   // generate wishbone write register strobes -- one hot if 8 bit bus

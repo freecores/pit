@@ -36,26 +36,19 @@
 ////////////////////////////////////////////////////////////////////////////////
 // 45678901234567890123456789012345678901234567890123456789012345678901234567890
 
-module pit_top #(parameter ARST_LVL = 1'b0,      // asynchronous reset level
+module pit_top #(parameter D_WIDTH = 16,
+                 parameter ARST_LVL = 1'b0,      // asynchronous reset level
+                 parameter SINGLE_CYCLE = 1'b0,  // Add a wait state to bus transcation
                  parameter PRE_COUNT_SIZE = 15,  // Prescale Counter size
                  parameter COUNT_SIZE = 16,      // Main counter size
                  parameter DECADE_CNTR = 1'b1,   // Prescale rollover decode
-                 parameter NO_PRESCALE = 1'b0,   // Remove prescale function
-                 parameter SINGLE_CYCLE = 1'b0,  // No bus wait state added
-		 parameter DWIDTH = 16)          // Data bus width
+                 parameter NO_PRESCALE = 1'b0)   // Remove prescale function
   (
   // Wishbone Signals
-  output [DWIDTH-1:0] wb_dat_o,     // databus output
-  output              wb_ack_o,     // bus cycle acknowledge output
-  input               wb_clk_i,     // master clock input
-  input               wb_rst_i,     // synchronous active high reset
-  input               arst_i,       // asynchronous reset
-  input         [2:0] wb_adr_i,     // lower address bits
-  input  [DWIDTH-1:0] wb_dat_i,     // databus input
-  input               wb_we_i,      // write enable input
-  input               wb_stb_i,     // stobe/core select signal
-  input               wb_cyc_i,     // valid bus cycle input
-  input         [1:0] wb_sel_i,     // Select byte in word bus transaction
+  wishbone_if.slave          wb,        // Wishbone interface instance
+  output logic [D_WIDTH-1:0] wb_dat_o,  // databus output - Pseudo Register
+  output logic               wb_ack,    // bus cycle acknowledge output
+  input  logic               wb_stb,    // stobe/core select signal
   // PIT IO Signals
   output              pit_o,        // PIT output pulse
   output              pit_irq_o,    // PIT interrupt request signal output
@@ -77,28 +70,30 @@ module pit_top #(parameter ARST_LVL = 1'b0,      // asynchronous reset level
   logic                  pit_flag;      //
   
   // Wishbone Bus interface
-  pit_wb_bus #(.ARST_LVL(ARST_LVL),
-               .SINGLE_CYCLE(SINGLE_CYCLE),
-               .DWIDTH(DWIDTH))
+  pit_wb_bus #(.ARST_LVL    (ARST_LVL),
+               .D_WIDTH     (D_WIDTH))
     wishbone(
-      .irq_source   ( cnt_flag_o ),
-      .read_regs    (               // in  -- status register bits
-		     { cnt_n,
-		       mod_value,
-		       {pit_slave, DECADE_CNTR, NO_PRESCALE, 1'b0, pit_pre_scl,
-		        5'b0, cnt_flag_o, pit_ien, cnt_sync_o}
-		     }
-		    ),
+    // Wishbone Signals
+    .wb           ( wb ),
+    .wb_stb       ( wb_stb ),
+    .wb_ack       ( wb_ack ),
+    .irq_source   ( cnt_flag_o ),
+    .read_regs    (               // in  -- status register bits
+		   { cnt_n,
+		     mod_value,
+		     {pit_slave, DECADE_CNTR, NO_PRESCALE, 1'b0, pit_pre_scl,
+		      5'b0, cnt_flag_o, pit_ien, cnt_sync_o}
+		   }
+		  ),
     .*);
 
 // -----------------------------------------------------------------------------
-  pit_regs #(.ARST_LVL(ARST_LVL),
-             .COUNT_SIZE(COUNT_SIZE),
+  pit_regs #(.COUNT_SIZE(COUNT_SIZE),
 	     .NO_PRESCALE(NO_PRESCALE),
-             .DWIDTH(DWIDTH))
+             .D_WIDTH(D_WIDTH))
     regs(
-      .bus_clk      ( wb_clk_i ),
-      .write_bus    ( wb_dat_i ),
+      .bus_clk      ( wb.wb_clk ),
+      .write_bus    ( wb.wb_dat ),
       .*);
 
 // -----------------------------------------------------------------------------
@@ -106,14 +101,14 @@ module pit_top #(parameter ARST_LVL = 1'b0,      // asynchronous reset level
                  .DECADE_CNTR(DECADE_CNTR),
 		 .NO_PRESCALE(NO_PRESCALE))
     prescale(
-    .bus_clk      ( wb_clk_i ),
+    .bus_clk      ( wb.wb_clk ),
     .divisor      ( pit_pre_scl ),
     .*);
 
 // -----------------------------------------------------------------------------
   pit_count #(.COUNT_SIZE(COUNT_SIZE))
     counter(
-    .bus_clk      ( wb_clk_i ),
+    .bus_clk      ( wb.wb_clk ),
     .*);
 
 endmodule // pit_top
